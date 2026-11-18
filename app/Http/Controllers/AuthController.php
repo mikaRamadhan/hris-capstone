@@ -118,11 +118,25 @@ class AuthController extends Controller
      * Pengalihan berdasarkan role.
      */
     private function redirectByRole(string $role)
-    {
-        if ($role === 'admin' || $role === 'hrd') {
-            return redirect()->route('users.index');
-        }
+{
+    switch ($role) {
+        case 'admin':
+            return redirect()->route('admin.dashboard');
 
-        return redirect()->route('applicant.dashboard');
+        case 'hrd':
+            return redirect()->route('hrd.dashboard');
+
+        case 'applicant':
+            return redirect()->route('applicant.dashboard');
+
+        default:
+            Auth::logout();
+
+            return redirect()
+                ->route('login')
+                ->withErrors([
+                    'email' => 'Role akun tidak dikenali.',
+                ]);
     }
+}
 }

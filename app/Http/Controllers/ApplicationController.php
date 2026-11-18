@@ -7,6 +7,8 @@ use App\Models\Applicant;
 use App\Models\Vacancy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ApplicationController extends Controller
 {
@@ -156,6 +158,26 @@ class ApplicationController extends Controller
             ->route('applications.show', $application->id)
             ->with('success', 'Data lamaran berhasil diperbarui.');
     }
+    /**
+ * Mengubah status lamaran tanpa membuka form edit.
+ */
+public function updateStatus(Request $request, string $id)
+{
+    $validated = $request->validate([
+        'status' => 'required|in:submitted,reviewing,accepted,rejected',
+    ]);
+
+    $application = Application::findOrFail($id);
+
+    $application->update([
+        'status' => $validated['status'],
+    ]);
+
+    return back()->with(
+        'success',
+        'Status lamaran berhasil diperbarui.'
+    );
+}
 
     /**
      * Menghapus lamaran beserta dokumennya.
@@ -178,6 +200,81 @@ class ApplicationController extends Controller
             ->route('applications.index')
             ->with('success', 'Data lamaran berhasil dihapus.');
     }
+    /**
+ * Dashboard khusus HRD.
+ */
+public function dashboard()
+{
+    $totalApplicants = Applicant::count();
+    $totalApplications = Application::count();
+
+    $totalSubmitted = Application::where('status', 'submitted')->count();
+    $totalReviewing = Application::where('status', 'reviewing')->count();
+    $totalAccepted = Application::where('status', 'accepted')->count();
+    $totalRejected = Application::where('status', 'rejected')->count();
+
+    $totalVacancies = Vacancy::where('status', 'open')->count();
+
+    $totalEmployees = \App\Models\Employee::count();
+
+    // Grafik tren lamaran 6 bulan terakhir.
+    $monthlyApplications = [];
+    $monthlyLabels = [];
+
+    for ($i = 5; $i >= 0; $i--) {
+        $date = Carbon::now()->subMonths($i);
+
+        $monthlyLabels[] = $date->translatedFormat('M Y');
+
+        $monthlyApplications[] = Application::whereYear(
+            'applied_at',
+            $date->year
+        )->whereMonth(
+            'applied_at',
+            $date->month
+        )->count();
+    }
+
+    // Grafik distribusi status lamaran.
+    $statusLabels = [
+        'Terkirim',
+        'Sedang Ditinjau',
+        'Diterima',
+        'Ditolak',
+    ];
+
+    $statusData = [
+        $totalSubmitted,
+        $totalReviewing,
+        $totalAccepted,
+        $totalRejected,
+    ];
+
+    // Lamaran terbaru.
+    $latestApplications = Application::with([
+        'applicant',
+        'vacancy',
+    ])
+        ->latest('applied_at')
+        ->take(6)
+        ->get();
+
+    return view('hrd.dashboard', compact(
+        'totalApplicants',
+        'totalApplications',
+        'totalSubmitted',
+        'totalReviewing',
+        'totalAccepted',
+        'totalRejected',
+        'totalVacancies',
+        'totalEmployees',
+        'monthlyLabels',
+        'monthlyApplications',
+        'statusLabels',
+        'statusData',
+        'latestApplications'
+    ));
+}
 
     /**
      * Menyimpan dokumen lamaran.

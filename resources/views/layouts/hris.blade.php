@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>@yield('title', 'Manajemen User') - HRIS</title>
+    <title>@yield('title', 'HRIS') - Human Resources Information System</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -13,6 +14,7 @@
             font-family: Arial, sans-serif;
             background: #f5f6fa;
             color: #263238;
+            min-height: 100vh;
         }
 
         .main-content {
@@ -58,6 +60,16 @@
             border-radius: 8px;
         }
 
+        .navbar .nav-link {
+            font-size: 14px;
+            margin-right: 5px;
+        }
+
+        .navbar .nav-link.active {
+            font-weight: 700;
+            color: #fff !important;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 padding: 20px 12px;
@@ -68,13 +80,25 @@
             }
         }
     </style>
+
+    @stack('styles')
 </head>
 <body>
+
+    @auth
+        @if(auth()->user()->role === 'admin')
+            @include('components.navbar-admin')
+        @elseif(auth()->user()->role === 'hrd')
+            @include('components.navbar-hrd')
+        @endif
+    @endauth
 
     <main class="main-content">
         @yield('content')
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    @stack('scripts')
 </body>
 </html>
